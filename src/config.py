@@ -26,6 +26,7 @@ class BotSettings(BaseSettings):
     BOT_USERNAME: str
     ADMINS_ID: list[int]
     TELEGRAM_CHANNEL_ID: int
+    TELEGRAM_CHANNEL_URL: str
 
     POSTGRES_HOST: str
     POSTGRES_PORT: int

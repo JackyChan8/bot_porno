@@ -1,5 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from src.config import settings
+
 
 async def payments_choose_inline_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
@@ -55,7 +57,7 @@ async def subscribe_channels_buttons_inline_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text='Подписаться 📢', url='https://t.me/+AFoiNFj23_9hNTNi')
+                InlineKeyboardButton(text='Подписаться 📢', url=settings.TELEGRAM_CHANNEL_URL)
             ],
             [InlineKeyboardButton(text='Выполнено ✅', callback_data='subscribe_success')],
         ]
