@@ -15,7 +15,7 @@ from src.utils.filters import IsAdmin, IsBanUser
 from src.utils.keyboards.reply import user as user_reply_keyboard
 from src.utils.keyboards.inline import user as user_inline_keyboard
 from src.utils.utils_func import (check_is_digit, delete_before_message, output_watch_file,
-                                  add_referral_link, PAYMENT_METHOD)
+                                  add_referral_link, PAYMENT_METHOD, check_subscribe_user_channel)
 
 from src.config import settings, decorate_logging
 
@@ -50,6 +50,10 @@ async def user_start_command(message: Message, session: AsyncSession, command: C
 @decorate_logging
 async def user_watch_file(message: Message, session: AsyncSession) -> None:
     """Watch File Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     type_file: str = message.text.split(' ')[1].lower()
 
     # Get Filename
@@ -67,6 +71,10 @@ async def user_watch_file(message: Message, session: AsyncSession) -> None:
 @decorate_logging
 async def user_profile_command(message: Message, session: AsyncSession) -> None:
     """Profile Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     user_id: int = message.from_user.id
     # Get Profile Information
     _, is_ban, cnt_photos, cnt_videos, is_premium, balance = await services.get_info_user(user_id, session)
@@ -84,6 +92,10 @@ async def user_profile_command(message: Message, session: AsyncSession) -> None:
 @decorate_logging
 async def user_top_up_command(message: Message) -> None:
     """Profile Top Up Balance Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     buttons = await user_inline_keyboard.top_up_balance_buttons_inline_keyboard()
     await message.answer(
         user_text.PROFILE_TOP_UP_TEXT,
@@ -96,6 +108,10 @@ async def user_top_up_command(message: Message) -> None:
 @decorate_logging
 async def user_top_up_buy_step_1(callback: CallbackQuery, state: FSMContext) -> None:
     """Buy Premium Step 1 Subscribe Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(callback.message.bot, callback.message.from_user.id, callback.message):
+        return
+
     sum_pay: int = int(callback.data.split('_')[-1])
     # Set State Transaction
     await state.set_state(user_state.TransactionPay.pay_method)
@@ -109,6 +125,10 @@ async def user_top_up_buy_step_1(callback: CallbackQuery, state: FSMContext) -> 
 @decorate_logging
 async def user_profile_out_balance_command(message: Message, state: FSMContext) -> None:
     """Profile Output Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     await state.set_state(user_state.OutBalanceStates.sum)
 
     buttons = await user_reply_keyboard.cancel_reply_command()
@@ -142,6 +162,10 @@ async def user_profile_out_balance_message(message: Message) -> None:
 @decorate_logging
 async def user_earn_command(message: Message) -> None:
     """Earn Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     await delete_before_message(message)
     buttons = await user_reply_keyboard.earn_reply_keyboard()
     await message.answer(
@@ -155,6 +179,10 @@ async def user_earn_command(message: Message) -> None:
 @decorate_logging
 async def user_offer_material_command(message: Message) -> None:
     """Offer Material Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     await message.answer(**user_text.OFFER_MATERIAL_TEXT.as_kwargs())
 
 
@@ -162,6 +190,10 @@ async def user_offer_material_command(message: Message) -> None:
 @decorate_logging
 async def user_invite_friend_command(message: Message, session: AsyncSession) -> None:
     """Invite Friend Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     referral_nums: tuple[Any] | None = await services.get_referral_earned(message.from_user.id, session)
     if referral_nums:
         count_referral: int = referral_nums[1]
@@ -182,6 +214,10 @@ async def user_invite_friend_command(message: Message, session: AsyncSession) ->
 @decorate_logging
 async def user_get_bonus_command(message: Message, state: FSMContext) -> None:
     """Get Bonus Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     await delete_before_message(message)
     await state.set_state(user_state.VerifyCodeState.code)
 
@@ -218,6 +254,10 @@ async def user_get_bonus_message(message: Message, state: FSMContext) -> None:
 @decorate_logging
 async def user_premium_subscribe_command(message: Message, session: AsyncSession) -> None:
     """Premium Subscribe Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     # Get Premium Price
     price: int = await services.get_premium_price(session)
     if not price:
@@ -236,6 +276,10 @@ async def user_premium_subscribe_command(message: Message, session: AsyncSession
 @decorate_logging
 async def user_premium_subscribe_buy_step_1(message: Message, state: FSMContext, session: AsyncSession) -> None:
     """Buy Premium Step 1 Subscribe Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     # Get Premium Price
     price: int = await services.get_premium_price(session)
     # Set State
@@ -288,5 +332,18 @@ async def user_payment_cancel(callback: CallbackQuery, session: AsyncSession) ->
 @decorate_logging
 async def user_categories_command(message: Message) -> None:
     """Categories Command Reply"""
+    # Check Subscribe
+    if not await check_subscribe_user_channel(message.bot, message.from_user.id, message):
+        return
+
     buttons = await user_reply_keyboard.categories_reply_command()
     await message.answer(user_text.CATEGORIES_TEXT, reply_markup=buttons, parse_mode=ParseMode.HTML)
+
+
+# ==================== Subscribe Channel
+@router.callback_query(~IsAdmin(), F.data == 'subscribe_success')
+async def user_check_subscribe_command(callback: CallbackQuery) -> None:
+    """Subscribe User Command"""
+    is_subscribe: bool = await check_subscribe_user_channel(callback.bot, callback.from_user.id, callback.message)
+    if is_subscribe:
+        await callback.message.answer(user_text.SUBSCRIBE_SUCCESS, parse_mode=ParseMode.HTML)

@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from aiogram import Router, F
@@ -19,7 +20,7 @@ from src.utils.static_path import VIDEO_PATH, PHOTOS_PATH
 from src.utils.keyboards.reply.user import cancel_reply_command
 from src.utils.keyboards.reply import admin as admin_reply_keyboard
 from src.utils.keyboards.inline import admin as admin_inline_keyboard
-from src.utils.utils_func import check_is_digit, get_files_name_download_file, delete_before_message
+from src.utils.utils_func import check_is_digit, get_files_name_download_file, delete_before_message, send_notification
 
 router = Router(name='admin')
 
@@ -89,6 +90,51 @@ async def admin_user_un_block(callback: CallbackQuery, session: AsyncSession) ->
     user_id: int = int(data[-1])
     # Block User
     await services.blocking_user(user_id, False, callback.message, session)
+
+
+# ==================== Notification
+@router.message(IsAdmin(), F.text == '📢 Уведомления')
+@decorate_logging
+async def admin_notify_command(message: Message) -> None:
+    """Notification Command"""
+    buttons = await admin_reply_keyboard.notification_reply_keyboard()
+    await message.answer(admin_text.CHOOSE_COMMAND, reply_markup=buttons, parse_mode=ParseMode.HTML)
+
+
+@router.message(IsAdmin(), F.text == '✉️ Отправить всем')
+@decorate_logging
+async def admin_send_all_notify_command(message: Message, state: FSMContext) -> None:
+    """Notification Send Command"""
+    # Setup State
+    await state.set_state(admin_state.NotificationState.message)
+
+    buttons = await cancel_reply_command()
+    await message.answer(admin_text.WRITE_MESSAGE_NOTIFY, reply_markup=buttons, parse_mode=ParseMode.HTML)
+
+
+@router.message(IsAdmin(), admin_state.NotificationState.message, F.text != 'Отмена ❌')
+@decorate_logging
+async def admin_notification_sending(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    """Notication Send to Users"""
+    if not message.text:
+        await message.answer(admin_text.WRITE_MESSAGE_NOTIFY, parse_mode=ParseMode.HTML)
+        return
+
+    from sqlalchemy import null
+
+    # Clear State
+    await state.clear()
+
+    # Get users
+    users = await services.get_users(session=session, offset=null(), limit=null())
+
+    # Send Admin Notification Success Sending
+    await message.answer(admin_text.NOTIFY_SUCCESS_SEND, parse_mode=ParseMode.HTML)
+    await admin_start_command(message)
+
+    # Send Notification
+    tasks = [send_notification(message.bot, user, message.text) for user in users]
+    await asyncio.gather(*tasks)
 
 
 # ==================== Settings

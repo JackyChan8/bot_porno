@@ -7,7 +7,18 @@ async def start_reply_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text='👥 Пользователи')],
+            [KeyboardButton(text='📢 Уведомления')],
             [KeyboardButton(text='🛠 Настройка')]
+        ],
+        resize_keyboard=True,
+    )
+
+
+async def notification_reply_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text='✉️ Отправить всем')],
+            [main_menu_button],
         ],
         resize_keyboard=True,
     )

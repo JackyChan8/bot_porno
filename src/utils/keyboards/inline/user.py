@@ -55,8 +55,7 @@ async def subscribe_channels_buttons_inline_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text='➡️ Вступить', url='https://t.me/+76dCZOJrO5JkOTYy'),
-                InlineKeyboardButton(text='Подписаться 📢', url='https://t.me/+tazloA5yEs84YWM6')
+                InlineKeyboardButton(text='Подписаться 📢', url='https://t.me/+AFoiNFj23_9hNTNi')
             ],
             [InlineKeyboardButton(text='Выполнено ✅', callback_data='subscribe_success')],
         ]

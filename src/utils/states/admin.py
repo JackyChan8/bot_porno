@@ -14,3 +14,7 @@ class FileState(StatesGroup):
 class TechSupportState(StatesGroup):
     username = State()
     action = State()
+
+
+class NotificationState(StatesGroup):
+    message = State()

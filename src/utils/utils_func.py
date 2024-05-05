@@ -1,12 +1,16 @@
 import os
+import re
+import asyncio
+from random import randint
 
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import CallbackQuery, Message, FSInputFile
+from aiogram import Bot
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.services import services
-from src.config import decorate_logging
+from src.config import decorate_logging, settings
 from src.utils.text import user as user_text
 from src.utils.static_path import PHOTOS_PATH, VIDEO_PATH
 from src.utils.keyboards.inline import user as user_inline_keyboard
@@ -48,8 +52,7 @@ async def output_watch_file(file_name: str, type_file: str, message: Message, se
     # Check Balance
     balance = await services.get_balance(user_id, session)
     if balance <= 1:
-        buttons = await user_inline_keyboard.subscribe_channels_buttons_inline_keyboard()
-        await message.answer(user_text.WATCH_FILE_NOT_BALANCE, reply_markup=buttons, parse_mode=ParseMode.HTML)
+        await message.answer(user_text.NOT_BALANCE_MONEY, parse_mode=ParseMode.HTML)
         return
 
     cost_watch, file_path = data.get(type_file)
@@ -146,3 +149,27 @@ async def get_files_name_download_file(message: Message, type_file: str, album: 
         path_file: str = await save_document(file_id, type_file, message)
         files_names.append(path_file)
     return files_names
+
+
+@decorate_logging
+async def send_notification(bot: Bot, user_id: int, text: str, disable_notification=False) -> None:
+    """Send Notification Function"""
+    await asyncio.sleep(randint(0, 9))
+    await bot.send_message(user_id, text, disable_notification=disable_notification)
+
+
+@decorate_logging
+async def check_subscribe_user_channel(bot: Bot, user_id: int, message: Message):
+    """Check Subscribe User on Channel"""
+    user_channel_status = await bot.get_chat_member(
+        chat_id=settings.TELEGRAM_CHANNEL_ID,
+        user_id=user_id,
+    )
+
+    user_channel_status = re.findall(r"\w*", str(user_channel_status))
+    if user_channel_status[5] == 'LEFT':
+        # User Doens't Subscribe
+        buttons = await user_inline_keyboard.subscribe_channels_buttons_inline_keyboard()
+        await message.answer(user_text.WATCH_FILE_NOT_BALANCE, reply_markup=buttons, parse_mode=ParseMode.HTML)
+        return False
+    return True
